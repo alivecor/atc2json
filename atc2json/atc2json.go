@@ -129,8 +129,8 @@ func Parse(atcData []byte) (*EcgData, error) {
 	}
 
 	result := &EcgData{}
-	scale := 1e6 / float32(fmtBlock.Resolution)
-	result.Gain = scale
+
+	result.Gain = 1e6 / float32(fmtBlock.Resolution)
 
 	result.Frequency = float32(fmtBlock.Frequency)
 
@@ -138,6 +138,14 @@ func Parse(atcData []byte) (*EcgData, error) {
 		result.MainsFequency = 60
 	} else {
 		result.MainsFequency = 50
+	}
+
+	if samplesI != nil {
+		result.Samples.LeadI = samplesI
+	}
+
+	if samplesII != nil {
+		result.Samples.LeadII = samplesII
 	}
 
 	return result, nil

@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/alivecor/acgo/atc/atc2json"
+	"github.com/alivecor/atc2json/atc2json"
 )
 
 func main() {
