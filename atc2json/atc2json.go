@@ -39,8 +39,8 @@ type EcgData struct {
 }
 
 type EcgSamples struct {
-	LeadI  []int16 `json:"lead_I"`
-	LeadII []int16 `json:"lead_II,omitempty"`
+	LeadI  []int16 `json:"leadI"`
+	LeadII []int16 `json:"leadII,omitempty"`
 }
 
 // Parse will take atcData and return EcgData struct with error
