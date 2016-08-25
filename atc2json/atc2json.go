@@ -32,10 +32,10 @@ type FmtBlock struct {
 }
 
 type EcgData struct {
-	Frequency     float32    `json:"frequency"`
-	MainsFequency int        `json:"mainsFrequency"`
-	Gain          float32    `json:"gain"`
-	Samples       EcgSamples `json:"samples"`
+	Frequency      float32    `json:"frequency"`
+	MainsFrequency int        `json:"mainsFrequency"`
+	Gain           float32    `json:"gain"`
+	Samples        EcgSamples `json:"samples"`
 }
 
 type EcgSamples struct {
@@ -135,9 +135,9 @@ func Parse(atcData []byte) (*EcgData, error) {
 	result.Frequency = float32(fmtBlock.Frequency)
 
 	if fmtBlock.Flags&2 != 0 {
-		result.MainsFequency = 60
+		result.MainsFrequency = 60
 	} else {
-		result.MainsFequency = 50
+		result.MainsFrequency = 50
 	}
 
 	if samplesI != nil {
