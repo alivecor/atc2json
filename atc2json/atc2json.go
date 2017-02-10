@@ -31,11 +31,23 @@ type FmtBlock struct {
 	Reserved   uint16
 }
 
+// InfoBlock contains the ATC info block header
+type InfoBlock struct {
+	DateRecorded     [32]byte
+	RecordingUUID    [40]byte
+	PhoneUDID        [44]byte
+	PhoneModel       [32]byte
+	RecorderSoftware [32]byte
+	RecorderHardware [32]byte
+	Location         [52]byte
+}
+
 type EcgData struct {
 	Frequency      float32    `json:"frequency"`
 	MainsFrequency int        `json:"mainsFrequency"`
 	Gain           float32    `json:"gain"`
 	Samples        EcgSamples `json:"samples"`
+	Info           *InfoBlock
 }
 
 type EcgSamples struct {
@@ -61,8 +73,7 @@ func Parse(atcData []byte) (*EcgData, error) {
 	var samplesI []int16
 	var samplesII []int16
 	var fmtBlock *FmtBlock
-
-	// TODO write InfoBlock struct
+	var infoBlock *InfoBlock
 
 	for {
 		blockStart := int64(dataLen - reader.Len())
@@ -83,6 +94,17 @@ func Parse(atcData []byte) (*EcgData, error) {
 		case "fmt ":
 			fmtBlock = &FmtBlock{}
 			err = binary.Read(reader, binary.LittleEndian, fmtBlock)
+			if err != nil {
+				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+			}
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
+
+		case "info":
+			infoBlock = &InfoBlock{}
+			err = binary.Read(reader, binary.LittleEndian, infoBlock)
 			if err != nil {
 				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
 			}
@@ -147,6 +169,8 @@ func Parse(atcData []byte) (*EcgData, error) {
 	if samplesII != nil {
 		result.Samples.LeadII = samplesII
 	}
+
+	result.Info = infoBlock
 
 	return result, nil
 }
