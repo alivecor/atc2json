@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 )
 
 var AtcFileSignature = [8]byte{'A', 'L', 'I', 'V', 'E', 0, 0, 0}
@@ -81,11 +80,7 @@ func Parse(atcData []byte) (*EcgData, error) {
 		err := binary.Read(reader, binary.LittleEndian, &blockHeader)
 
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Printf("Error reading from input: %s\n", err.Error())
-			os.Exit(-1)
+			return nil, fmt.Errorf("Error reading file: %s", err.Error())
 		}
 
 		blockType := string(blockHeader.BlockId[:])
