@@ -80,6 +80,9 @@ func Parse(atcData []byte) (*EcgData, error) {
 		err := binary.Read(reader, binary.LittleEndian, &blockHeader)
 
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return nil, fmt.Errorf("Error reading file: %s", err.Error())
 		}
 
