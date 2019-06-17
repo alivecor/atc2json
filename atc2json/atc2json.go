@@ -50,8 +50,12 @@ type EcgData struct {
 }
 
 type EcgSamples struct {
-	LeadI  []int16 `json:"leadI"`
-	LeadII []int16 `json:"leadII,omitempty"`
+	LeadI   []int16 `json:"leadI"`
+	LeadII  []int16 `json:"leadII,omitempty"`
+	LeadIII []int16 `json:"leadIII,omitempty"`
+	AVR     []int16 `json:"aVR,omitempty"`
+	AVL     []int16 `json:"aVL,omitempty"`
+	AVF     []int16 `json:"aVF,omitempty"`
 }
 
 // Parse will take atcData and return EcgData struct with error
@@ -69,8 +73,12 @@ func Parse(atcData []byte) (*EcgData, error) {
 
 	blockHeader := BlockHeader{}
 
-	var samplesI []int16
-	var samplesII []int16
+	var leadISamples []int16
+	var leadIISamples []int16
+	var leadIIISamples []int16
+	var aVRSamples []int16
+	var aVLSamples []int16
+	var aVFSamples []int16
 	var fmtBlock *FmtBlock
 	var infoBlock *InfoBlock
 
@@ -89,6 +97,7 @@ func Parse(atcData []byte) (*EcgData, error) {
 		blockType := string(blockHeader.BlockId[:])
 
 		switch blockType {
+		// Space after word is intended, per spec - cp 2019-2-19
 		case "fmt ":
 			fmtBlock = &FmtBlock{}
 			err = binary.Read(reader, binary.LittleEndian, fmtBlock)
@@ -111,9 +120,10 @@ func Parse(atcData []byte) (*EcgData, error) {
 				return nil, err
 			}
 
+		// Space after word is intended, per spec - cp 2019-2-19
 		case "ecg ":
-			samplesI = make([]int16, blockHeader.Length/2)
-			err = binary.Read(reader, binary.LittleEndian, &samplesI)
+			leadISamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &leadISamples)
 			if err != nil {
 				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
 			}
@@ -123,22 +133,65 @@ func Parse(atcData []byte) (*EcgData, error) {
 				return nil, err
 			}
 
-		case "2ecg":
-			samplesII = make([]int16, blockHeader.Length/2)
-			err = binary.Read(reader, binary.LittleEndian, &samplesII)
+		case "ecg2":
+			leadIISamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &leadIISamples)
 			if err != nil {
 				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
 			}
 
-			// Skip the checksum temporarily because it is not matching now
-			// var checksum uint32
-			// binary.Read(reader, binary.LittleEndian, &checksum)
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
 
-			// err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
-			// if err != nil {
-			// 	return nil, err
-			// }
+		case "ecg3":
+			leadIIISamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &leadIIISamples)
+			if err != nil {
+				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+			}
 
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
+
+		case "ecg4":
+			aVRSamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &aVRSamples)
+			if err != nil {
+				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+			}
+
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
+
+		case "ecg5":
+			aVLSamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &aVLSamples)
+			if err != nil {
+				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+			}
+
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
+
+		case "ecg6":
+			aVFSamples = make([]int16, blockHeader.Length/2)
+			err = binary.Read(reader, binary.LittleEndian, &aVFSamples)
+			if err != nil {
+				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+			}
+
+			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			discardBuf := make([]byte, blockHeader.Length+ChecksumLength)
 			_, err = reader.Read(discardBuf)
@@ -160,12 +213,28 @@ func Parse(atcData []byte) (*EcgData, error) {
 		result.MainsFrequency = 50
 	}
 
-	if samplesI != nil {
-		result.Samples.LeadI = samplesI
+	if leadISamples != nil {
+		result.Samples.LeadI = leadISamples
 	}
 
-	if samplesII != nil {
-		result.Samples.LeadII = samplesII
+	if leadIISamples != nil {
+		result.Samples.LeadII = leadIISamples
+	}
+
+	if leadIIISamples != nil {
+		result.Samples.LeadIII = leadIIISamples
+	}
+
+	if aVRSamples != nil {
+		result.Samples.AVR = aVRSamples
+	}
+
+	if aVLSamples != nil {
+		result.Samples.AVL = aVLSamples
+	}
+
+	if aVFSamples != nil {
+		result.Samples.AVF = aVFSamples
 	}
 
 	result.Info = infoBlock
