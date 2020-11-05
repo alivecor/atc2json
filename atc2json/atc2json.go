@@ -42,11 +42,12 @@ type InfoBlock struct {
 }
 
 type EcgData struct {
-	Frequency      float32    `json:"frequency"`
-	MainsFrequency int        `json:"mainsFrequency"`
-	Gain           float32    `json:"gain"`
-	Samples        EcgSamples `json:"samples"`
-	Info           *InfoBlock
+	Frequency           float32    `json:"frequency"`
+	AmplitudeResolution int        `json:"amplitudeResolution"`
+	MainsFrequency      int        `json:"mainsFrequency"`
+	Gain                float32    `json:"gain"`
+	Samples             EcgSamples `json:"samples"`
+	Info                *InfoBlock
 }
 
 type EcgSamples struct {
@@ -206,6 +207,7 @@ func Parse(atcData []byte) (*EcgData, error) {
 	result.Gain = 1e6 / float32(fmtBlock.Resolution)
 
 	result.Frequency = float32(fmtBlock.Frequency)
+	result.AmplitudeResolution = int(fmtBlock.Resolution)
 
 	if fmtBlock.Flags&2 != 0 {
 		result.MainsFrequency = 60
