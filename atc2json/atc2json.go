@@ -66,10 +66,13 @@ func Parse(atcData []byte) (*EcgData, error) {
 	reader := bytes.NewReader(atcData)
 
 	header := AtcFileHeader{}
-	binary.Read(reader, binary.LittleEndian, &header)
+	err := binary.Read(reader, binary.LittleEndian, &header)
+	if err != nil {
+		return nil, fmt.Errorf("E#2D4V51: Failed to read data. Error: %v\n", err)
+	}
 
 	if header.FileSignature != AtcFileSignature {
-		return nil, fmt.Errorf("Wrong file signature")
+		return nil, fmt.Errorf("E#2D4V67: Wrong file signature")
 	}
 
 	blockHeader := BlockHeader{}
@@ -92,7 +95,7 @@ func Parse(atcData []byte) (*EcgData, error) {
 			if err == io.EOF {
 				break
 			}
-			return nil, fmt.Errorf("Error reading file: %s", err.Error())
+			return nil, fmt.Errorf("E#2D4V6H: Error reading file: %s", err.Error())
 		}
 
 		blockType := string(blockHeader.BlockId[:])
@@ -103,22 +106,22 @@ func Parse(atcData []byte) (*EcgData, error) {
 			fmtBlock = &FmtBlock{}
 			err = binary.Read(reader, binary.LittleEndian, fmtBlock)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4V6P: Error reading buffer: %s", err.Error())
 			}
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4V75: Checksum verification failed for 'fmt' block. Error: %v\n", err)
 			}
 
 		case "info":
 			infoBlock = &InfoBlock{}
 			err = binary.Read(reader, binary.LittleEndian, infoBlock)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4V6P: Error reading buffer: %s", err.Error())
 			}
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VHM: Checksum verification failed for 'info' block. Error: %v\n", err)
 			}
 
 		// Space after word is intended, per spec - cp 2019-2-19
@@ -126,83 +129,88 @@ func Parse(atcData []byte) (*EcgData, error) {
 			leadISamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &leadISamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4V6P: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VHZ: Checksum verification failed for 'ecg' block. Error: %v\n", err)
 			}
 
 		case "ecg2":
 			leadIISamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &leadIISamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VFZ: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VIN: Checksum verification failed for 'ecg2' block. Error: %v\n", err)
 			}
 
 		case "ecg3":
 			leadIIISamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &leadIIISamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VFP: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VJC: Checksum verification failed for 'ecg3' block. Error: %v\n", err)
 			}
 
 		case "ecg4":
 			aVRSamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &aVRSamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VFC: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VJW: Checksum verification failed for 'ecg4' block. Error: %v\n", err)
 			}
 
 		case "ecg5":
 			aVLSamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &aVLSamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VEW: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VKT: Checksum verification failed for 'ecg5' block. Error: %v\n", err)
 			}
 
 		case "ecg6":
 			aVFSamples = make([]int16, blockHeader.Length/2)
 			err = binary.Read(reader, binary.LittleEndian, &aVFSamples)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading buffer: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VEI: Error reading buffer: %s", err.Error())
 			}
 
 			err = verifyChecksum(atcData, blockStart, blockHeader.Length, reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("E#2D4VLG: Checksum verification failed for 'ecg6' block. Error: %v\n", err)
 			}
 		default:
 			discardBuf := make([]byte, blockHeader.Length+ChecksumLength)
 			_, err = reader.Read(discardBuf)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading input: %s", err.Error())
+				return nil, fmt.Errorf("E#2D4VE5: Error reading buffer: %s", err.Error())
 			}
 		}
 	}
 
 	result := &EcgData{}
+
+	// If there was no fmtblock that was found, that's an obvious error
+	if fmtBlock == nil {
+		return nil, fmt.Errorf("E#2D4VQS: fmt not found in data")
+	}
 
 	result.Gain = 1e6 / float32(fmtBlock.Resolution)
 
@@ -265,14 +273,17 @@ func calcChecksum(data []byte) uint32 {
 	return uint32(sum)
 }
 
-func verifyChecksum(data []byte, blockStart int64, blockLen uint32, reader io.Reader) (err error) {
+func verifyChecksum(data []byte, blockStart int64, blockLen uint32, reader io.Reader) error {
 	var checksum uint32
-	binary.Read(reader, binary.LittleEndian, &checksum)
+	err := binary.Read(reader, binary.LittleEndian, &checksum)
+	if err != nil {
+		return fmt.Errorf("E#2D4VCY: Could not read binary data. Error: %v\n", err)
+	}
 
 	sum := calcChecksum(data[blockStart : blockStart+8+int64(blockLen)])
 
 	if checksum != sum {
-		return fmt.Errorf("Checksum does not match. Expected: [%v] Calculated:[%v]", checksum, sum)
+		return fmt.Errorf("checksum does not match. Expected: [%v] Calculated:[%v]", checksum, sum)
 	}
 	return nil
 }
