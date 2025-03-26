@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	atcData, err := ioutil.ReadAll(os.Stdin)
+	atcData, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -19,7 +19,7 @@ func main() {
 	jsonOut, err := atc2json.Convert(atcData)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("P#2D4UOQ: ", err)
 	}
 
 	fmt.Printf(jsonOut)
